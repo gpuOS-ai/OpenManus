@@ -24,8 +24,8 @@ from app.tool.terminate import Terminate
 class MCPServer:
     """MCP Server implementation with tool registration and management."""
 
-    def __init__(self, name: str = "openmanus"):
-        self.server = FastMCP(name)
+    def __init__(self, name: str = "openmanus", *args, **kwargs):
+        self.server = FastMCP(name, *args, **kwargs)
         self.tools: Dict[str, BaseTool] = {}
 
         # Initialize standard tools
@@ -165,9 +165,19 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="OpenManus MCP Server")
     parser.add_argument(
         "--transport",
-        choices=["stdio"],
+        choices=["stdio", "streamable-http"],
         default="stdio",
-        help="Communication method: stdio or http (default: stdio)",
+        help="Communication method",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        help="Host address for the MCP server when using streamable HTTP transport",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        help="Port number for the MCP server when using streamable HTTP transport",
     )
     return parser.parse_args()
 
@@ -176,5 +186,10 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Create and run server (maintaining original flow)
-    server = MCPServer()
+    kwargs = {}
+    if args.host:
+        kwargs['host'] = args.host
+    if args.port:
+        kwargs['port'] = args.port
+    server = MCPServer(**kwargs)
     server.run(transport=args.transport)

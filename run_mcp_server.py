@@ -7,5 +7,10 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Create and run server (maintaining original flow)
-    server = MCPServer()
+    kwargs = {}
+    if args.host:
+        kwargs['host'] = args.host
+    if args.port:
+        kwargs['port'] = args.port
+    server = MCPServer(**kwargs)
     server.run(transport=args.transport)
