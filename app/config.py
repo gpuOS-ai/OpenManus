@@ -67,7 +67,7 @@ class RunflowSettings(BaseModel):
 
 
 class BrowserSettings(BaseModel):
-    headless: bool = Field(False, description="Whether to run browser in headless mode")
+    headless: bool = Field(True, description="Whether to run browser in headless mode")
     disable_security: bool = Field(
         True, description="Disable browser security features"
     )
