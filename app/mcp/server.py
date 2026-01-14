@@ -24,8 +24,8 @@ from app.tool.terminate import Terminate
 class MCPServer:
     """MCP Server implementation with tool registration and management."""
 
-    def __init__(self, name: str = "openmanus"):
-        self.server = FastMCP(name)
+    def __init__(self, name: str = "openmanus", *args, **kwargs):
+        self.server = FastMCP(name, *args, **kwargs)
         self.tools: Dict[str, BaseTool] = {}
 
         # Initialize standard tools
