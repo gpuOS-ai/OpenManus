@@ -24,8 +24,8 @@ from app.tool.terminate import Terminate
 class MCPServer:
     """MCP Server implementation with tool registration and management."""
 
-    def __init__(self, name: str = "openmanus", *args, **kwargs):
-        self.server = FastMCP(name, *args, **kwargs)
+    def __init__(self, name: str = "openmanus"):
+        self.server = FastMCP(name)
         self.tools: Dict[str, BaseTool] = {}
 
         # Initialize standard tools
@@ -74,6 +74,29 @@ class MCPServer:
         # Register with server
         self.server.tool()(tool_method)
         logger.info(f"Registered tool: {tool_name}")
+
+    def register_browser_get_current_state_tool(self) -> None:
+        """Register the browser get_current_state tool separately."""
+        if "browser" not in self.tools:
+            logger.warning("Browser tool not found; cannot register get_current_state tool.")
+            return
+
+        browser_tool = self.tools["browser"]
+
+        async def get_current_state():
+            logger.info("Executing browser.get_current_state")
+            result = await browser_tool.get_current_state()
+            logger.info(f"Result of browser.get_current_state: {result}")
+            return result
+
+        # Set method metadata
+        get_current_state.__name__ = "browser_get_current_state"
+        get_current_state.__doc__ = "Get the current state of the browser."
+        get_current_state.__signature__ = Signature()
+
+        # Register with server
+        self.server.tool()(get_current_state)
+        logger.info("Registered tool: browser_get_current_state")
 
     def _build_docstring(self, tool_function: dict) -> str:
         """Build a formatted docstring from tool function metadata."""
@@ -144,8 +167,10 @@ class MCPServer:
 
     def register_all_tools(self) -> None:
         """Register all tools with the server."""
-        for tool in self.tools.values():
-            self.register_tool(tool)
+        for tool_name in self.tools.keys():
+            self.register_tool(self.tools[tool_name])
+            if tool_name == "browser":
+                self.register_browser_get_current_state_tool()
 
     def run(self, transport: str = "stdio") -> None:
         """Run the MCP server."""
@@ -165,19 +190,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="OpenManus MCP Server")
     parser.add_argument(
         "--transport",
-        choices=["stdio", "streamable-http"],
+        choices=["stdio"],
         default="stdio",
-        help="Communication method",
-    )
-    parser.add_argument(
-        "--host",
-        type=str,
-        help="Host address for the MCP server when using streamable HTTP transport",
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        help="Port number for the MCP server when using streamable HTTP transport",
+        help="Communication method: stdio or http (default: stdio)",
     )
     return parser.parse_args()
 
@@ -186,10 +201,5 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Create and run server (maintaining original flow)
-    kwargs = {}
-    if args.host:
-        kwargs['host'] = args.host
-    if args.port:
-        kwargs['port'] = args.port
-    server = MCPServer(**kwargs)
+    server = MCPServer()
     server.run(transport=args.transport)
